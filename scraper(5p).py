@@ -1,60 +1,25 @@
-import sqlite3
+import datetime
+from secrets5p import APP_NAME,APP_SOURCE,PASSWORD,ENCRYPTION_KEY,USER_ID,USER_KEY,client_code,Pin
+from FivePaisaHelperLib import FivePaisaWrapper
+from scraper import save_to_csv
+from stocksList import nifty50_stocks
 
-import py5paisa
+stocks_copy = nifty50_stocks
+for i,symbol in enumerate(stocks_copy):
+    stocks_copy[i] = symbol.split('.')[0]
 
-from secrets5p import (APP_NAME, APP_SOURCE, ENCRYPTION_KEY, PASSWORD, USER_ID,
-                       USER_KEY)
+app = FivePaisaWrapper(APP_NAME=APP_NAME,APP_SOURCE=APP_SOURCE,USER_KEY=USER_KEY,
+                       USER_ID=USER_ID,PASSWORD=PASSWORD,ENCRYPTION_KEY=ENCRYPTION_KEY,client_code=client_code,pin=Pin)
 
-cred = {
-    "APP_NAME": APP_NAME,
-    "APP_SOURCE": APP_SOURCE,
-    "USER_ID": USER_ID,
-    "PASSWORD": PASSWORD,
-    "USER_KEY": USER_KEY,
-    "ENCRYPTION_KEY": ENCRYPTION_KEY
-}
+app.login('Enter totp here')
+app.load_conv_dict('/home/yeashu/project/nifty data download/scrips/symbols2Scip.csv')
 
+start = datetime.datetime(2019,1,1)
+end = datetime.datetime(2023,5,25)
+csvFilepath = '/home/yeashu/project/nifty data download/Data/Equities_csv/intraday'
 
-client = py5paisa.FivePaisaClient(cred=cred)
-client.get_access_token('Your Response Token')
+data = app.download_intraday_data(nifty50_stocks,'15m',start=start,end=end,verbose=True)
 
-# write a function to download data using 5paisa
-
-
-def download_data(exchange, exchange_type, scrip_code, time_frame, from_date, to_date):
-    # download candles data
-    candles = client.historical_data(
-        exchange, exchange_type, scrip_code, time_frame, from_date, to_date)
-    return candles
-
-# save data to a database
-
-
-def save_data_to_db(candles, symbol):
-    conn = sqlite3.connect('5paisa.db')
-    # save data to a database
-    conn.execute(
-        f"CREATE TABLE IF NOT EXISTS {symbol} (open REAL, high REAL, low REAL, close REAL, volume REAL, date TEXT)")
-    for candle in candles:
-        conn.execute(f"INSERT INTO {symbol} VALUES (?, ?, ?, ?, ?, ?)",
-                     (candle.open, candle.high, candle.low, candle.close, candle.volume, candle.date))
-        conn.commit()
-
-    conn.close()
-
-
-if __name__ == "__main__":
-    exchange = "N"
-    exchange_type = "C"
-    scrip_codes = [1660, 1234, 5678]  # Example list of scrip codes
-    time_frame = "15m"
-    from_date = "2023-01-01"
-    to_date = "2023-01-02"
-
-    for scrip_code in scrip_codes:
-        candles = download_data(exchange, exchange_type,
-                                scrip_code, time_frame, from_date, to_date)
-        # You can replace this with the actual symbol if available
-        symbol = str(scrip_code)
-        save_data_to_db(candles, symbol)
-        print(f"Data downloaded and saved for {symbol}")
+for symbol,df in data.items():
+    print(f'Saving {symbol} data to csv')
+    save_to_csv(df,symbol,filepath=csvFilepath)

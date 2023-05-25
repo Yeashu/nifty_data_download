@@ -35,7 +35,10 @@ class FivePaisaWrapper:
         download(self, symbols, interval, start, end, Exch='N', ExchangeSegment='C'):
             Downloads historical data for multiple symbols from the 5paisa API.
 
+        download_intraday_data(self, symbols, interval, start, end, Exch='N', ExchangeSegment='C'):
+            Downloads intraday data for multiple symbols from the 5paisa API in batches of 5 months.
     """
+
     calls_per_minute = 0
 
     def __init__(self, APP_NAME: str, APP_SOURCE: int, USER_ID: str, PASSWORD: str, USER_KEY: str, ENCRYPTION_KEY: str,
@@ -73,9 +76,7 @@ class FivePaisaWrapper:
 
         Args:
             filepath (str): The file path of the CSV file containing the symbol to scrip code mapping.
-
         """
-
         # Load the dictionary from the CSV file
         dictionary = {}
         with open(filepath, 'r') as csvfile:
@@ -92,9 +93,7 @@ class FivePaisaWrapper:
 
         Args:
             totp (int): The TOTP (Time-based One-Time Password) for authentication.
-
         """
-
         self.client.get_totp_session(client_code=self.client_code, totp=totp, pin=self.pin)
 
     def logged_in(self):
@@ -103,10 +102,8 @@ class FivePaisaWrapper:
 
         Returns:
             bool: True if the user is logged in, False otherwise.
-
         """
-
-        if 'None' == self.client.Login_check().split('=')[1]:
+        if 40 < len(self.client.Login_check()):
             return False
         else:
             return True
@@ -125,16 +122,12 @@ class FivePaisaWrapper:
 
         Returns:
             pandas.DataFrame: The downloaded historical data as a DataFrame.
-
         """
-
-        if not self.logged_in():
-            raise Exception('NOT LOGGED IN')
 
         return self.client.historical_data(Exch=Exch, ExchangeSegment=ExchangeSegment, ScripCode=ScripCode,
                                            time=interval, From=start, To=end)
 
-    def download(self, symbols, interval, start, end, Exch='N', ExchangeSegment='C'):
+    def download(self, symbols, interval, start, end, Exch='N', ExchangeSegment='C',verbose=True):
         """
         Downloads historical data for multiple symbols from the 5paisa API.
 
@@ -145,26 +138,29 @@ class FivePaisaWrapper:
             end (str): The end date for the historical data.
             Exch (str, optional): The exchange of the symbols. Defaults to 'N'.
             ExchangeSegment (str, optional): The exchange segment of the symbols. Defaults to 'C'.
+            verbose (bool, optional): If true prints the tasks currently performing. Defaults to True
 
         Returns:
-            dict: A Dictonary of downloaded historical data using symbols as key and DataFrames as value.
-
+            dict: A Dictionary of downloaded historical data using symbols as keys and DataFrames as values.
         """
-
         downloadedDataFrames = {}
         for symbol in symbols:
-            #implement api limit
-            if calls_per_minute >= 50:
+            # Implement API call limit
+            if self.calls_per_minute >= 50:
                 time.sleep(60)  # Pause for 60 seconds (1 minute)
-                calls_per_minute = 0
+                self.calls_per_minute = 0
+            
+            if verbose:
+                print(f'Downloading {symbol} data')
 
             scrip = self.symbol2scrip[symbol]
-            downloadedDataFrames[symbol] = self.scrip_download(Exch=Exch, ExchangeSegment=ExchangeSegment, ScripCode=scrip, interval=interval,
-                                    start=start, end=end)
-            calls_per_minute += 1
-            return downloadedDataFrames
-    
-    def download_intraday_data(self, symbols, interval, start: datetime.datetime, end: datetime.datetime, Exch='N', ExchangeSegment='C'):
+            downloadedDataFrames[symbol] = self.scrip_download(Exch=Exch, ExchangeSegment=ExchangeSegment,
+                                                               ScripCode=scrip, interval=interval,
+                                                               start=start, end=end).set_index('Datetime',inplace=True)
+            self.calls_per_minute += 1
+        return downloadedDataFrames
+
+    def download_intraday_data(self, symbols, interval, start: datetime.datetime, end: datetime.datetime, Exch='N', ExchangeSegment='C',verbose=True):
         """
         Downloads intraday data for multiple symbols from the 5paisa API in batches of 5 months.
 
@@ -175,20 +171,24 @@ class FivePaisaWrapper:
             end (str): The end date for the intraday data.
             Exch (str, optional): The exchange of the symbols. Defaults to 'N'.
             ExchangeSegment (str, optional): The exchange segment of the symbols. Defaults to 'C'.
+            verbose (bool, optional): If true prints the tasks currently performing. Defaults to True
 
         Returns:
-        dict: A Dictionary of downloaded intraday historical data using symbols as keys and DataFrames as values.
+            dict: A Dictionary of downloaded intraday historical data using symbols as keys and DataFrames as values.
         """
-
         downloadedDataFrames = {}
         for symbol in symbols:
             # Split the date range into batches of 5 months
             current_start = start
+            if verbose:
+                print(f'Downloading {symbol} data')
             while current_start < end:
-                 #implement api limit
-                if calls_per_minute >= 50:
+                # Implement API call limit
+                if self.calls_per_minute >= 50:
+                    if verbose:
+                        print('Api limit reached waiting for 60sec')
                     time.sleep(60)  # Pause for 60 seconds (1 minute)
-                    calls_per_minute = 0
+                    self.calls_per_minute = 0
 
                 current_end = current_start + datetime.timedelta(days=175)
                 if current_end > end:
@@ -197,9 +197,12 @@ class FivePaisaWrapper:
                 # Download historical data for the current batch
                 scrip = self.symbol2scrip[symbol]
                 data = self.scrip_download(Exch=Exch, ExchangeSegment=ExchangeSegment, ScripCode=scrip,
-                                           interval=interval, start=current_start.strftime("%Y-%m-%d"), end=current_end.strftime("%Y-%m-%d"))
-                calls_per_minute += 1
+                                           interval=interval, start=current_start.strftime("%Y-%m-%d"),
+                                           end=current_end.strftime("%Y-%m-%d"))
+                self.calls_per_minute += 1
 
+                #set date column as index
+                data.set_index('Datetime',inplace=True)
                 # Store the downloaded data
                 if symbol not in downloadedDataFrames:
                     downloadedDataFrames[symbol] = data
@@ -211,7 +214,3 @@ class FivePaisaWrapper:
                 current_start = current_end + datetime.timedelta(days=1)
 
         return downloadedDataFrames
-
-
-
-
