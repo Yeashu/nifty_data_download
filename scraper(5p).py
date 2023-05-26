@@ -1,5 +1,5 @@
 import datetime
-from secrets5p import APP_NAME,APP_SOURCE,PASSWORD,ENCRYPTION_KEY,USER_ID,USER_KEY,client_code,Pin
+from ..secrets.secrets5p import APP_NAME,APP_SOURCE,PASSWORD,ENCRYPTION_KEY,USER_ID,USER_KEY,client_code,Pin
 from FivePaisaHelperLib import FivePaisaWrapper
 from scraper import save_to_csv
 from stocksList import nifty50_stocks
@@ -12,7 +12,7 @@ app = FivePaisaWrapper(APP_NAME=APP_NAME,APP_SOURCE=APP_SOURCE,USER_KEY=USER_KEY
                        USER_ID=USER_ID,PASSWORD=PASSWORD,ENCRYPTION_KEY=ENCRYPTION_KEY,client_code=client_code,pin=Pin)
 
 app.login('Enter totp here')
-app.load_conv_dict('/home/yeashu/project/nifty data download/scrips/symbols2Scip.csv')
+app.load_conv_dict('/home/yeashu/project/AlgoTrading app/scrips/symbols2Scip.csv')
 
 start = datetime.datetime(2019,1,1)
 end = datetime.datetime(2023,5,25)
