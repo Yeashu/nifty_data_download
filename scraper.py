@@ -66,7 +66,7 @@ def save_to_database(df, symbol, conn):
         logging.error(f"Error occurred while saving {symbol} data to the database: {str(e)}")
 
 
-def download_and_save_data(symbols, start_date=None, end_date=None, save_to_db=False, db_conn=None, csv_path=None):
+def download_and_save_data(symbols, start_date=None, end_date=None, save_to_db=False,db_conn=None, csv_path=None):
     """
     Downloads stock data for multiple symbols and saves them to either a database or CSV files.
 
@@ -77,16 +77,20 @@ def download_and_save_data(symbols, start_date=None, end_date=None, save_to_db=F
         save_to_db (bool): Flag indicating whether to save the data to a database.
         db_conn: Database connection object.
         csv_path (str): Path to the directory where the CSV files will be saved.
-
+    Returns:
+        data (dict): containing downloaded data
     """
+    data = {}
     for symbol in symbols:
         print(f"Downloading {symbol} data...")
         df = download_stock_data(symbol, start_date, end_date)
         if df is not None:
+            data[symbol] = df
             if save_to_db:
                 save_to_database(df, symbol, db_conn)
             if csv_path is not None:
                 save_to_csv(df, symbol, csv_path)
+    return data
 
 
 def main():

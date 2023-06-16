@@ -13,7 +13,7 @@ from ApiKeys.secrets5p import (
     Pin,
 )
 from lib.FivePaisaHelperLib import FivePaisaWrapper
-from scraper import save_to_csv
+from scraper import save_to_csv,download_and_save_data
 from stocksList import nifty50_stocks
 
 app = FivePaisaWrapper(
@@ -43,7 +43,7 @@ def UpdateData(totp:str,intraday:bool=True):
     symbol = nifty50_stocks[3]
     df = pd.read_csv(f'{csvFilepath}/{symbol}.csv')
     if timeIndex in df.columns:
-        latest_date = pd.to_datetime(df["Datetime"].iloc[-1]).to_pydatetime()
+        latest_date = pd.to_datetime(df[timeIndex].iloc[-1]).to_pydatetime()
     
 
     if latest_date == 0:
@@ -55,9 +55,16 @@ def UpdateData(totp:str,intraday:bool=True):
     start = latest_date if latest_date else datetime.datetime(2019, 1, 1)
     end = datetime.datetime.now()  # Set the end date as the current date and time
 
-    data = app.download_intraday_data(
-        nifty50_stocks, "15m", start=start, end=end, verbose=True
-    )
+    if intraday:
+        data = app.download_intraday_data(
+            nifty50_stocks, "15m", start=start, end=end, verbose=True
+        )
+    else :
+        #Using yfinance
+        c_nifty50_stocks = nifty50_stocks
+        for i,symbol in enumerate(c_nifty50_stocks):
+            c_nifty50_stocks[i] = symbol+'.NS'
+        data = download_and_save_data(c_nifty50_stocks,start=start,end_date=end)
 
     for symbol, df in data.items():
         print(f"Saving updated {symbol} data to csv")
