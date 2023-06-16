@@ -116,7 +116,7 @@ def main():
     else:
         start_date = None  # Example start date (set to None to use the available historical data)
         end_date = None  # Example end date (set to None to use the current date)
-        csv_path = '/home/yeashu/project/AlgoTrading app/nifty data download/Data/Equities_csv/daily'
+        csv_path = '/home/yeashu/project/AlgoTrading app/nifty_data_download/Data/Equities_csv/daily'
         symbols = nifty50_stocks
         download_and_save_data(symbols, start_date, end_date, save_to_db=False, csv_path=csv_path)
 
