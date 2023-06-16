@@ -13,7 +13,7 @@ from ApiKeys.secrets5p import (
     Pin,
 )
 from lib.FivePaisaHelperLib import FivePaisaWrapper
-from scraper import save_to_csv,download_and_save_data
+from scraper import download_stock_data, save_to_csv
 from stocksList import nifty50_stocks
 
 app = FivePaisaWrapper(
@@ -27,14 +27,29 @@ app = FivePaisaWrapper(
     pin=Pin,
 )
 
-
+def UpdateYfData():
+    dData = {}
+    for stock in nifty50_stocks:
+       symbol = stock + '.NS'
+       dData[stock] = download_stock_data(symbol,None,None,) 
+    path = '/home/yeashu/project/AlgoTrading app/nifty_data_download/Data/Equities_csv/daily/nifty50'
+    histdata = {}
+    for stock in nifty50_stocks:
+        df = pd.read_csv(f'{path}/{stock}.csv',index_col='Date')
+        histdata[stock] = df
+    for stock, values in dData.items():
+        histdata[stock] = pd.concat([[histdata[stock]],values])
+    
+    for symbol,df in histdata.items():
+        save_to_csv(df=df,symbol=symbol,filepath=path)
+    
 def UpdateData(totp:str,intraday:bool=True):
     app.login(totp)
     app.load_conv_dict(
         "/home/yeashu/project/AlgoTrading app/scrips/symbols2Scip.csv"
     )
-    csvFilepath = "/home/yeashu/project/AlgoTrading app/nifty_data_download/Data/Equities_csv/daily/nifty50"
-    timeIndex = "Date"
+    csvFilepath = "/home/yeashu/project/AlgoTrading app/nifty_data_download/Data/Equities_csv/daily/5p"
+    timeIndex = "Datetime"
     if intraday:
         csvFilepath = "/home/yeashu/project/AlgoTrading app/nifty_data_download/Data/Equities_csv/intraday"
         timeIndex = "Datetime"
@@ -60,11 +75,7 @@ def UpdateData(totp:str,intraday:bool=True):
             nifty50_stocks, "15m", start=start, end=end, verbose=True
         )
     else :
-        #Using yfinance
-        c_nifty50_stocks = nifty50_stocks
-        for i,symbol in enumerate(c_nifty50_stocks):
-            c_nifty50_stocks[i] = symbol+'.NS'
-        data = download_and_save_data(c_nifty50_stocks,start=start,end_date=end)
+        data = app.download(nifty50_stocks,'1d',start.strftime("%Y-%m-%d"),end.strftime("%Y-%m-%d"))
 
     for symbol, df in data.items():
         print(f"Saving updated {symbol} data to csv")
