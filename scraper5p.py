@@ -12,13 +12,9 @@ from ApiKeys.secrets5p import (
     client_code,
     Pin,
 )
-from ..lib.FivePaisaHelperLib import FivePaisaWrapper
+from lib.FivePaisaHelperLib import FivePaisaWrapper
 from scraper import save_to_csv
 from stocksList import nifty50_stocks
-
-stocks_copy = nifty50_stocks
-for i, symbol in enumerate(stocks_copy):
-    stocks_copy[i] = symbol.split(".")[0]
 
 app = FivePaisaWrapper(
     APP_NAME=APP_NAME,
@@ -32,23 +28,23 @@ app = FivePaisaWrapper(
 )
 
 
-def UpdateData(totp:str):
+def UpdateData(totp:str,intraday:bool=True):
     app.login(totp)
     app.load_conv_dict(
         "/home/yeashu/project/AlgoTrading app/scrips/symbols2Scip.csv"
     )
-
-    csvFilepath = "/home/yeashu/project/nifty_data_download/Data/Equities_csv/intraday"
+    csvFilepath = "/home/yeashu/project/AlgoTrading app/nifty_data_download/Data/Equities_csv/daily/nifty50"
+    timeIndex = "Date"
+    if intraday:
+        csvFilepath = "/home/yeashu/project/AlgoTrading app/nifty_data_download/Data/Equities_csv/intraday"
+        timeIndex = "Datetime"
     latest_date = 0
 
-    symbol = stocks_copy[3]
-    symbol_file = os.path.join(csvFilepath, f"{symbol}.csv")
-    if os.path.isfile(symbol_file):
-        df = pd.read_csv(symbol_file)
-        if "Datetime" in df.columns:
-            latest_date = pd.to_datetime(df["Datetime"].iloc[-1])
-        elif "Date" in df.columns:
-            latest_date = pd.to_datetime(df["Date"].iloc[-1])
+    symbol = nifty50_stocks[3]
+    df = pd.read_csv(f'{csvFilepath}/{symbol}.csv')
+    if timeIndex in df.columns:
+        latest_date = pd.to_datetime(df["Datetime"].iloc[-1]).to_pydatetime()
+    
 
     if latest_date == 0:
         c = input("Cannot find date automatically do you want to continue[yes/no]")
@@ -60,7 +56,7 @@ def UpdateData(totp:str):
     end = datetime.datetime.now()  # Set the end date as the current date and time
 
     data = app.download_intraday_data(
-        stocks_copy, "15m", start=start, end=end, verbose=True
+        nifty50_stocks, "15m", start=start, end=end, verbose=True
     )
 
     for symbol, df in data.items():
@@ -85,7 +81,7 @@ if __name__ == "__main__":
         start = datetime.datetime(2019, 1, 1)
         end = datetime.datetime(2023, 5, 25)
         csvFilepath = (
-            "/home/yeashu/project/nifty_data_download/Data/Equities_csv/intraday"
+            "/home/yeashu/project/AlgoTrading app/nifty_data_download/Data/Equities_csv/intraday"
         )
 
         data = app.download_intraday_data(
