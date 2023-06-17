@@ -12,6 +12,11 @@ from ApiKeys.secrets5p import (
     client_code,
     Pin,
 )
+import sys
+import os
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(parent_dir)
 from lib.FivePaisaHelperLib import FivePaisaWrapper
 from scraper import download_stock_data, save_to_csv
 from stocksList import nifty50_stocks
