@@ -35,7 +35,7 @@ def download_stock_data(symbol, start_date=None, end_date=None, interval='1d'):
         return None
 
 
-def save_to_csv(df, symbol, filepath):
+def save_to_csv(df: pd.DataFrame, symbol: str, filepath: str) -> None:
     """
     Saves stock data to a CSV file.
 
@@ -46,7 +46,8 @@ def save_to_csv(df, symbol, filepath):
 
     """
     try:
-        filename = f'{filepath}/{symbol}.csv'
+        os.makedirs(filepath, exist_ok=True)  # Create the directory if it doesn't exist
+        filename = os.path.join(filepath, f'{symbol}.csv')
         df.to_csv(filename, index=True)
         logging.info(f"{symbol} data saved to {filename}.")
     except Exception as e:
