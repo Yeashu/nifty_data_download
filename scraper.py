@@ -9,7 +9,7 @@ import os
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(parent_dir)
 
-from stocksList import nifty50_stocks
+from stocksList import nifty_50
 
 
 def download_stock_data(symbol, start_date=None, end_date=None, interval='1d'):
@@ -114,7 +114,7 @@ def main():
         end_date = None  # Example end date (set to None to use the current date)
 
         # Iterate over the Nifty 50 symbols and download/save data
-        nifty50_symbols = nifty50_stocks  # Add all the Nifty 50 symbols
+        nifty50_symbols = nifty_50  # Add all the Nifty 50 symbols
         download_and_save_data(nifty50_symbols, start_date, end_date, save_to_db=True, db_conn=conn)
 
         # Close the database connection
@@ -127,7 +127,7 @@ def main():
         start_date = None  # Example start date (set to None to use the available historical data)
         end_date = None  # Example end date (set to None to use the current date)
         csv_path = '/home/yeashu/project/AlgoTrading app/nifty_data_download/Data/Equities_csv/daily'
-        symbols = nifty50_stocks
+        symbols = nifty_50
         download_and_save_data(symbols, start_date, end_date, save_to_db=False, csv_path=csv_path)
 
 
