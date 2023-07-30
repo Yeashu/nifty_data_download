@@ -100,7 +100,7 @@ def UpdateData(
 
         for symbol, df in tqdm(data.items(), desc="Saving data"):
             existing_data = load_dataframe_from_csv(symbol, csvFilepath, index_col=timeIndex)
-            combined_data = pd.concat([existing_data, df])
+            combined_data = pd.concat([existing_data, df]).drop_duplicates(keep='first')
             save_to_csv(combined_data, symbol, filepath=save_location)
 
     except Exception as e:
